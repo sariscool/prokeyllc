@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Car Query Dropdown Test</title>
+</head>
+<body>
+    <h1>Car Year, Make, and Model Selection</h1>
+
+    <form id="vehicleForm">
+        <label for="yearSelect">Year:</label>
+        <select id="yearSelect" name="yearSelect" class="drop_down inline_answer">
+            <option value="">Select Year</option>
+        </select>
+
+        <label for="makeSelect">Make:</label>
+        <select id="makeSelect" name="makeSelect" class="drop_down inline_answer" disabled>
+            <option value="">Select Make</option>
+        </select>
+
+        <label for="modelSelect">Model:</label>
+        <select id="modelSelect" name="modelSelect" class="drop_down inline_answer" disabled>
+            <option value="">Select Model</option>
+        </select>
+
+        <input type="submit" value="Submit">
+    </form>
+
+    <script>
+        // Dropbox link to the CSV file
+        const csvUrl = 'C:\Users\User\Desktop\CarQuery.csv';
+
+
+        // Create an empty object to hold the parsed car data
+        let carData = {};
+
+        // Fetch CSV data and populate dropdowns when the page loads
+        document.addEventListener('DOMContentLoaded', function () {
+            fetchCSVData();
+        });
+
+        // Function to fetch CSV data from Dropbox
+        async function fetchCSVData() {
+            const response = await fetch(csvUrl);
+            const data = await response.text();
+            parseCSVData(data);
+        }
+
+        // Function to parse CSV data and populate the carData object
+        function parseCSVData(csv) {
+            const rows = csv.split('\n').map(row => row.split(','));
+
+            // Remove header row
+            rows.shift();
+
+            // Populate the carData object
+            carData = rows.reduce((acc, row) => {
+                const [year, make, model] = row.map(item => item.trim()); // Ensure there are no extra spaces
+                if (!acc[year]) acc[year] = {};
+                if (!acc[year][make]) acc[year][make] = [];
+                acc[year][make].push(model);
+                return acc;
+            }, {});
+
+            populateYearDropdown();
+        }
+
+        // Populate the Year dropdown with the available years from carData
+        function populateYearDropdown() {
+            const yearSelect = document.getElementById("yearSelect");
+            const years = Object.keys(carData);
+
+            years.forEach(year => {
+                const option = document.createElement("option");
+                option.value = year;
+                option.text = year;
+                yearSelect.appendChild(option);
+            });
+
+            // Enable Year dropdown change event to load Makes
+            yearSelect.addEventListener("change", handleYearChange);
+        }
+
+        // Handle Year selection and populate Make dropdown
+        function handleYearChange() {
+            const selectedYear = this.value;
+            const makeSelect = document.getElementById("makeSelect");
+            const modelSelect = document.getElementById("modelSelect");
+
+            makeSelect.innerHTML = '<option value="">Select Make</option>'; // Reset Make dropdown
+            modelSelect.innerHTML = '<option value="">Select Model</option>'; // Reset Model dropdown
+            modelSelect.disabled = true; // Disable Model dropdown initially
+
+            if (selectedYear) {
+                const makes = Object.keys(carData[selectedYear]);
+                makes.forEach(make => {
+                    const option = document.createElement("option");
+                    option.value = make;
+                    option.text = make;
+                    makeSelect.appendChild(option);
+                });
+                makeSelect.disabled = false; // Enable Make dropdown
+                makeSelect.addEventListener("change", handleMakeChange);
+            } else {
+                makeSelect.disabled = true; // Disable Make dropdown if no year is selected
+            }
+        }
+
+        // Handle Make selection and populate Model dropdown
+        function handleMakeChange() {
+            const selectedYear = document.getElementById("yearSelect").value;
+            const selectedMake = this.value;
+            const modelSelect = document.getElementById("modelSelect");
+
+            modelSelect.innerHTML = '<option value="">Select Model</option>'; // Reset Model dropdown
+
+            if (selectedYear && selectedMake) {
+                const models = carData[selectedYear][selectedMake];
+                models.forEach(model => {
+                    const option = document.createElement("option");
+                    option.value = model;
+                    option.text = model;
+                    modelSelect.appendChild(option);
+                });
+                modelSelect.disabled = false; // Enable Model dropdown
+            } else {
+                modelSelect.disabled = true; // Disable Model dropdown if no make is selected
+            }
+        }
+    </script>
+</body>
+</html>
